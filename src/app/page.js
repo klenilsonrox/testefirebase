@@ -4,6 +4,7 @@ import { db, storage } from './firebase/firebase';
 import { doc, setDoc, addDoc, collection, getDocs, deleteDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
+import Link from 'next/link';
 
 const Page = () => {
   const [nome, setNome] = useState("");
@@ -125,7 +126,9 @@ const Page = () => {
   const editPost = (post) => {
     setNome(post.nome);
     setIdade(post.idade);
-    setImageUrl(post.image);
+    if(file){
+      setImageUrl(post.image);
+    }
     setCurrentId(post.id);
     setIsEditing(true);
   };
@@ -158,14 +161,15 @@ const Page = () => {
       {error && <p>{error}</p>}
       <div className="mt-8">
         <h2>Usuários</h2>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col mx-w-3xl gap-4">
           {posts.map((post) => (
-            <div key={post.id} className=" p-4 rounded-md border-b flex gap-4 items-center justify-between">
-              <div className="flex gap-4 items-center">
+            <div key={post.id} className=" p-4 rounded-md border-b flex gap-4 items-center max-w-2xl justify-between">
+              <div className="flex gap-4 b items-center">
                 <img src={post.image} alt={post.nome} className="w-full h-auto mb-4 max-w-[100px] max-h-[100px] object-cover rounded-full" />
                 <div>
                   <h3 className="text-xl font-bold">{post.nome}</h3>
                   <p>{post.idade} anos</p>
+                  <Link href={`/posts/${post.id}`} className='text-blue-600'>ver perfil</Link>
                 </div>
               </div>
               <div className="flex gap-2">
