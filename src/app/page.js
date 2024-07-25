@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { db, storage } from './firebase/firebase';
-import { doc, setDoc, addDoc, collection, getDocs } from "firebase/firestore";
+import { doc, setDoc, addDoc, collection, getDocs, deleteDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -13,6 +13,8 @@ const Page = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [error, setError] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentId, setCurrentId] = useState(null);
 
   const uploadImageAndSaveURL = async (file) => {
     try {
@@ -63,33 +65,35 @@ const Page = () => {
       return
     }
 
-    if(!file){
-      alert("coloque a sua foto")
-      return
-    }
 
     if(!idade.trim()){
       alert("coloque a sua idade")
       return
     }
 
-
-
     try {
       const downloadURL = await handleUpload();
-      const id = uuidv4();
-      await setDoc(doc(db, "posts", id), {
+      const id = isEditing ? currentId : uuidv4();
+      const docRef = doc(db, "posts", id);
+      const data = {
         nome: nome,
         idade: idade,
         image: downloadURL,
-      });
+      };
+
+      if (isEditing) {
+        await updateDoc(docRef, data);
+        setIsEditing(false);
+      } else {
+        await setDoc(docRef, data);
+      }
 
       setIdade("");
       setNome("");
       setFile(null);
       setImageUrl("");
-      console.log('usuario criado com sucesso');
-      fetchPosts(); // Atualiza os posts após criar um novo
+      console.log('Usuário criado com sucesso');
+      fetchPosts(); // Atualiza os posts após criar ou editar um
     } catch (error) {
       console.error("Error ao criar: ", error);
     }
@@ -104,8 +108,26 @@ const Page = () => {
       });
       setPosts(postsData);
     } catch (error) {
-      console.error("erro ao buscar usuarios: ", error);
+      console.error("Erro ao buscar usuários: ", error);
     }
+  };
+
+  const deletePost = async (id) => {
+    try {
+      await deleteDoc(doc(db, "posts", id));
+      fetchPosts(); // Atualiza os posts após deletar um
+      console.log('Usuário deletado com sucesso');
+    } catch (error) {
+      console.error("Erro ao deletar usuário: ", error);
+    }
+  };
+
+  const editPost = (post) => {
+    setNome(post.nome);
+    setIdade(post.idade);
+    setImageUrl(post.image);
+    setCurrentId(post.id);
+    setIsEditing(true);
   };
 
   useEffect(() => {
@@ -123,14 +145,14 @@ const Page = () => {
           </label>
         </div>
         <div className='flex flex-col w-full mt-4'>
-          <label htmlFor="titulo">Nome</label>
+          <label htmlFor="nome">Nome</label>
           <input type="text" value={nome} onChange={({ target }) => setNome(target.value)} className='py-2 rounded-md pl-3 shadow-md' />
         </div>
         <div className='flex flex-col mt-4 w-full'>
-          <label htmlFor="body">idade</label>
+          <label htmlFor="idade">Idade</label>
           <input type="text" value={idade} onChange={({ target }) => setIdade(target.value)} className='py-2 rounded-md pl-3 shadow-md' />
         </div>
-        <button type="submit" className='mt-4 bg-violet-800 text-white px-8 py-2 rounded-md'>Enviar</button>
+        <button type="submit" className='mt-4 bg-violet-800 text-white px-8 py-2 rounded-md'>{isEditing ? 'Atualizar' : 'Enviar'}</button>
       </form>
       {loading && <p>Uploading...</p>}
       {error && <p>{error}</p>}
@@ -138,11 +160,17 @@ const Page = () => {
         <h2>Usuários</h2>
         <div className="flex flex-col gap-4">
           {posts.map((post) => (
-            <div key={post.id} className=" p-4 rounded-md border-b flex gap-4">
-              <img src={post.image} alt={post.nome} className="w-full h-auto mb-4 max-w-[100px] max-h-[100px] object-cover rounded-full" />
-              <div>
-              <h3 className="text-xl font-bold">{post.nome}</h3>
-              <p>{post.idade} anos</p>
+            <div key={post.id} className=" p-4 rounded-md border-b flex gap-4 items-center justify-between">
+              <div className="flex gap-4 items-center">
+                <img src={post.image} alt={post.nome} className="w-full h-auto mb-4 max-w-[100px] max-h-[100px] object-cover rounded-full" />
+                <div>
+                  <h3 className="text-xl font-bold">{post.nome}</h3>
+                  <p>{post.idade} anos</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => editPost(post)} className="bg-blue-500 text-white px-4 py-2 rounded-md">Editar</button>
+                <button onClick={() => deletePost(post.id)} className="bg-red-500 text-white px-4 py-2 rounded-md">Deletar</button>
               </div>
             </div>
           ))}
