@@ -58,6 +58,23 @@ const Page = () => {
 
   const cadastrarPost = async (e) => {
     e.preventDefault();
+    if(!nome.trim()){
+      alert("coloque seu nome")
+      return
+    }
+
+    if(!file){
+      alert("coloque a sua foto")
+      return
+    }
+
+    if(!idade.trim()){
+      alert("coloque a sua idade")
+      return
+    }
+
+
+
     try {
       const downloadURL = await handleUpload();
       const id = uuidv4();
@@ -125,7 +142,7 @@ const Page = () => {
               <img src={post.image} alt={post.nome} className="w-full h-auto mb-4 max-w-[100px] max-h-[100px] object-cover rounded-full" />
               <div>
               <h3 className="text-xl font-bold">{post.nome}</h3>
-              <p>{post.idade}</p>
+              <p>{post.idade} anos</p>
               </div>
             </div>
           ))}
