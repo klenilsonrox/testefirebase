@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { db, storage } from './firebase/firebase';
-import { doc, setDoc, addDoc, collection, getDocs, deleteDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc, addDoc, collection, getDocs, deleteDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
 import Link from 'next/link';
@@ -79,7 +79,7 @@ const Page = () => {
       const data = {
         nome: nome,
         idade: idade,
-        image: downloadURL,
+        image: downloadURL ? downloadURL :"https://www2.camara.leg.br/atividade-legislativa/comissoes/comissoes-permanentes/cindra/imagens/sem.jpg.gif",
       };
 
       if (isEditing) {
@@ -98,16 +98,24 @@ const Page = () => {
     } catch (error) {
       console.error("Error ao criar: ", error);
     }
-  };
+  };  
 
   const fetchPosts = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, "posts"));
-      const postsData = [];
-      querySnapshot.forEach((doc) => {
-        postsData.push({ id: doc.id, ...doc.data() });
-      });
-      setPosts(postsData);
+      const unsub= onSnapshot(collection(db, "posts"), (snapshot)=>{
+        const listPost = []
+        snapshot.forEach((doc)=>{
+          listPost.push({
+            id:doc.id,
+            image:doc.data().image,
+            nome:doc.data().nome,
+            idade:doc.data().idade,
+          })
+          setPosts(listPost)
+        })
+      })
+      
+      
     } catch (error) {
       console.error("Erro ao buscar usuários: ", error);
     }
